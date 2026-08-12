@@ -16,6 +16,7 @@ import json
 import random
 import psutil
 import urllib.request
+from aiohttp import web
 from datetime import datetime, timedelta, timezone
 from logging.handlers import RotatingFileHandler
 from typing import Dict, List, Optional, Tuple, Any
@@ -103,30 +104,23 @@ console_handler.setFormatter(log_formatter)
 logger.addHandler(console_handler)
 
 # ==========================================
-# DUMMY WEB SERVER & KEEP-ALIVE SYSTEM
+# PROPER WEB SERVER & KEEP-ALIVE SYSTEM
 # ==========================================
-async def handle_ping_request(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
-    """Responds to web health checks to keep Render/Web services alive"""
-    try:
-        await reader.read(1024)
-        response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 12\r\n\r\nBot is Alive"
-        writer.write(response.encode('utf-8'))
-        await writer.drain()
-    except Exception:
-        pass
-    finally:
-        writer.close()
-        await writer.wait_closed()
-
-async def start_dummy_web_server():
-    """Starts a native asyncio HTTP server on $PORT for deployment platforms"""
-    try:
-        server = await asyncio.start_server(handle_ping_request, "0.0.0.0", PORT)
-        logger.info(f"🌐 Dummy Web Server running on port {PORT}")
-        async with server:
-            await server.serve_forever()
-    except Exception as e:
-        logger.error(f"❌ Dummy Web Server Error: {e}")
+async def web_server():
+    """Starts a proper aiohttp web server on $PORT for deployment platforms"""
+    async def health_check(request):
+        return web.Response(text="Bot is Alive")
+    
+    app = web.Application()
+    app.router.add_get('/', health_check)
+    
+    runner = web.AppRunner(app)
+    await runner.setup()
+    
+    port = int(os.environ.get("PORT", "8080"))
+    site = web.TCPSite(runner, '0.0.0.0', port)
+    await site.start()
+    logger.info(f"🌐 aiohttp Web Server running on port {port}")
 
 async def keep_alive_ping_loop():
     """Periodic self-ping loop to prevent free-tier instances from going to sleep"""
@@ -1964,7 +1958,7 @@ async def main():
     await load_and_verify_clients()
 
     # 3. Port Binding & Self-Ping Tasks (Host Crash & Sleep Se Bachane Ke Liye)
-    create_supervised_task(start_dummy_web_server(), name="dummy-web-server")
+    create_supervised_task(web_server(), name="dummy-web-server")
     create_supervised_task(keep_alive_ping_loop(), name="keep-alive-ping")
 
     # 4. Background Spammer & Account Monitor Engine
