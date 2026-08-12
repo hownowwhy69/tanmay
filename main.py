@@ -1949,25 +1949,28 @@ async def main():
     """Main Orchestrator: Sabhi background loops aur main bot ko ek sath run karta hai"""
     logger.info("🚀 Boot Sequence Initiated...")
     
+    # 🔴 SABSE BADI FIX: Web Server ko sabse pehle start karein taaki Render khush rahe aur 502 na aaye!
+    create_supervised_task(web_server(), name="dummy-web-server")
+    logger.info("🌐 Web server task scheduled first.")
+    
     # 1. Main Telethon Bot Start
     await asyncio.wait_for(bot.start(bot_token=BOT_TOKEN), timeout=30)
     
     # 2. Database & Accounts Setup
     await connect_to_mongodb()
     await setup_db()
+    
+    # Render iske beech mein ping karta rahega aur server "Alive" response deta rahega
     await load_and_verify_clients()
 
-    # 3. Port Binding & Self-Ping Tasks (Host Crash & Sleep Se Bachane Ke Liye)
-    create_supervised_task(web_server(), name="dummy-web-server")
+    # 3. Baaki background tasks start karein
     create_supervised_task(keep_alive_ping_loop(), name="keep-alive-ping")
-
-    # 4. Background Spammer & Account Monitor Engine
     create_supervised_task(spammer_engine(), name="broadcast-scheduler")
     create_supervised_task(health_check_clients(), name="client-health-check")
     
     logger.info("🟢 Bot fully active hai aur background engines chal rahe hain!")
     
-    # 5. Continuous Event Loop (Bot ko hamesha zinda rakhta hai)
+    # 4. Continuous Event Loop (Bot ko hamesha zinda rakhta hai)
     await bot.run_until_disconnected()
 
 if __name__ == '__main__':
