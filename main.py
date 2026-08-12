@@ -58,7 +58,7 @@ except ImportError:
 # ==========================================
 API_ID = int(os.getenv("API_ID", "38174429"))
 API_HASH = os.getenv("API_HASH", "45f03a04bfd3ce9d12c877b4295cf785")
-BOT_TOKEN = os.getenv("BOT_TOKEN", "8959839207:AAF7iopO45TEKw-ejIHKw-c15jRbmFyojqw")
+BOT_TOKEN = os.getenv("BOT_TOKEN", "8959839207:AAHRisdYogaRgsyabtGQGZWa-vW_rDB-y9I")
 ADMIN_ID = int(os.getenv("ADMIN_ID", "7929802589"))
 MONGODB_URI = os.getenv("MONGODB_URI", "mongodb+srv://alishalyfbuisness_db_user:aWwRhpw3NrcbSvaZ@cluster0.texmdkv.mongodb.net/?appName=Cluster0")
 PORT = int(os.getenv("PORT", "8080"))
